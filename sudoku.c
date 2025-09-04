@@ -5,7 +5,7 @@
 
 #define N_ROWS 9
 #define N_COLS 9
-#define GRID_SIZE N_ROWS * N_COLS
+#define GRID_SIZE (N_ROWS * N_COLS)
 
 char grid[N_ROWS*N_COLS];
 
@@ -17,7 +17,7 @@ int has_empty_space(char *grid) {
 
 }
 int get_grid_index(int row, int col) {
-   return (row * N_ROWS) + col;
+    return (row * N_COLS) + col;
 }
 int get_square_index(int row, int col) {
    return row/3*3 + (col / 3) + 1;	
@@ -35,7 +35,7 @@ void print_grid(char *grid) {
       for(int j = 0; j < N_COLS; j++) {
 	idx = (i * N_ROWS) + j; 
 	printf("%c ",grid[idx]);
-	if (idx % 3 == 2 && j < N_COLS-1)
+	if (j % 3 == 2 && j < N_COLS - 1)
 	    printf("|");	
       }
       printf("\n");
@@ -77,58 +77,39 @@ void exclude_square_value(char *units, char *grid, int square_index) {
 
 /* Try to solve grid */
 int solve_grid(char *grid) {
-   char units[] = "123456789";
-   char empty[] = "         ";
-   char *units_cpy;
+    // Find the first empty cell
+    int r = -1, c = -1;
+    for (int i = 0; i < N_ROWS && r == -1; i++) {
+        for (int j = 0; j < N_COLS; j++) {
+            if (grid[get_grid_index(i,j)] == '.') { r = i; c = j; break; }
+        }
+    }
+    if (r == -1) return 1; // no empties: solved
 
-   units_cpy = malloc(sizeof(char)*9);
+    // Build candidates for (r,c)
+    char cand[] = "123456789";
+    for (int k = 0; k < N_COLS; k++) exclude_value(cand, grid[get_grid_index(r,k)]);
+    for (int y = 0; y < N_ROWS; y++) exclude_value(cand, grid[get_grid_index(y,c)]);
+    exclude_square_value(cand, grid, get_square_index(r,c));
 
-   if (!has_empty_space(grid))
-	   return 1; // found solution
-		     
-   for (int r = 0; r < N_ROWS; r++) {
-	for (int c = 0; c < N_COLS; c++) {
-	     if (grid[get_grid_index(r,c)] != '.')
-		     continue;
-	     // I need to put a number on this unit
-             // First I need to check available number
-	     memcpy(units_cpy, units, 9);
-	     // check from column
-	     for(int k = 0; k < N_COLS; k++) 
-		 exclude_value(units_cpy, grid[get_grid_index(r,k)]);
-	     // check rows
-	     for (int y = 0; y < N_ROWS; y++)
-		 exclude_value(units_cpy, grid[get_grid_index(y,c)]);
-	     // check square
-	     exclude_square_value(units_cpy, grid, get_square_index(r,c));
+    // Try each candidate in place
+    for (int z = 0; z < 9; z++) {
+        if (cand[z] != ' ') {
+            grid[get_grid_index(r,c)] = cand[z];
+            if (solve_grid(grid)) return 1;
+        }
+    }
 
-	     if (memcmp(units_cpy, empty,9) != 0) {
-		     for (int z = 0; z < 9; z++) {
-			     if (units_cpy[z] != ' ') {
-				     char grid_copy[GRID_SIZE];
-				     memcpy(grid_copy, grid, GRID_SIZE);
-				     grid_copy[get_grid_index(r, c)] = units_cpy[z];
-				     //print_grid(grid_copy);
-				     //usleep(500000);
-				     if (solve_grid(grid_copy)==1) {
-					     grid[get_grid_index(r, c)] = units_cpy[z];
-					     return 1;
-			             }
-			     }
-		     
-		     }
-
-             }
-	  
-	}
-   }
-
-   return 0;
+    // Backtrack
+    grid[get_grid_index(r,c)] = '.';
+    return 0;
 }
+
+
 
 int main(void) {
    reset_grid(grid);
-   //print_grid(grid);
+   print_grid(grid);
    memcpy(grid,"..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..",81);
    solve_grid(grid);
    print_grid(grid);
