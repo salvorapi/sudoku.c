@@ -77,54 +77,51 @@ void exclude_square_value(char *units, char *grid, int square_index) {
 
 /* Try to solve grid */
 int solve_grid(char *grid) {
-   char units[] = "123456789";
-   char empty[] = "         ";
-   char *units_cpy;
+    char units[] = "123456789";
+    char empty[] = "         ";
+    char *units_cpy;
 
-   units_cpy = malloc(sizeof(char)*9);
+    units_cpy = malloc(sizeof(char)*9);
 
-   if (!has_empty_space(grid))
-	   return 1; // found solution
-		     
-   for (int r = 0; r < N_ROWS; r++) {
-	for (int c = 0; c < N_COLS; c++) {
-	     if (grid[get_grid_index(r,c)] != '.')
-		     continue;
-	     // I need to put a number on this unit
-             // First I need to check available number
-	     memcpy(units_cpy, units, 9);
-	     // check from column
-	     for(int k = 0; k < N_COLS; k++) 
-		 exclude_value(units_cpy, grid[get_grid_index(r,k)]);
-	     // check rows
-	     for (int y = 0; y < N_ROWS; y++)
-		 exclude_value(units_cpy, grid[get_grid_index(y,c)]);
-	     // check square
-	     exclude_square_value(units_cpy, grid, get_square_index(r,c));
+    if (!has_empty_space(grid)) {
+        free(units_cpy);                // <-- free on early success
+        return 1; // found solution
+    }
 
-	     if (memcmp(units_cpy, empty,9) != 0) {
-		     for (int z = 0; z < 9; z++) {
-			     if (units_cpy[z] != ' ') {
-				     char grid_copy[GRID_SIZE];
-				     memcpy(grid_copy, grid, GRID_SIZE);
-				     grid_copy[get_grid_index(r, c)] = units_cpy[z];
-				     //print_grid(grid_copy);
-				     //usleep(500000);
-				     if (solve_grid(grid_copy)==1) {
-					     grid[get_grid_index(r, c)] = units_cpy[z];
-					     return 1;
-			             }
-			     }
-		     
-		     }
+    for (int r = 0; r < N_ROWS; r++) {
+        for (int c = 0; c < N_COLS; c++) {
+            if (grid[get_grid_index(r,c)] != '.')
+                continue;
 
-             }
-	  
-	}
-   }
+            memcpy(units_cpy, units, 9);
+            for(int k = 0; k < N_COLS; k++)
+                exclude_value(units_cpy, grid[get_grid_index(r,k)]);
+            for (int y = 0; y < N_ROWS; y++)
+                exclude_value(units_cpy, grid[get_grid_index(y,c)]);
+            exclude_square_value(units_cpy, grid, get_square_index(r,c));
 
-   return 0;
+            if (memcmp(units_cpy, empty, 9) != 0) {
+                for (int z = 0; z < 9; z++) {
+                    if (units_cpy[z] != ' ') {
+                        char grid_copy[GRID_SIZE];
+                        memcpy(grid_copy, grid, GRID_SIZE);
+                        grid_copy[get_grid_index(r, c)] = units_cpy[z];
+
+                        if (solve_grid(grid_copy) == 1) {
+                            memcpy(grid, grid_copy, GRID_SIZE); // <-- bring back full solution
+                            free(units_cpy);                    // <-- free before returning
+                            return 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    free(units_cpy); // <-- free on failure path too
+    return 0;
 }
+
 
 int main(void) {
    reset_grid(grid);
