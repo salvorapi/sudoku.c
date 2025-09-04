@@ -77,50 +77,34 @@ void exclude_square_value(char *units, char *grid, int square_index) {
 
 /* Try to solve grid */
 int solve_grid(char *grid) {
-    char units[] = "123456789";
-    char empty[] = "         ";
-    char *units_cpy;
-
-    units_cpy = malloc(sizeof(char)*9);
-
-    if (!has_empty_space(grid)) {
-        free(units_cpy);                // <-- free on early success
-        return 1; // found solution
+    // Find the first empty cell
+    int r = -1, c = -1;
+    for (int i = 0; i < N_ROWS && r == -1; i++) {
+        for (int j = 0; j < N_COLS; j++) {
+            if (grid[get_grid_index(i,j)] == '.') { r = i; c = j; break; }
+        }
     }
+    if (r == -1) return 1; // no empties: solved
 
-    for (int r = 0; r < N_ROWS; r++) {
-        for (int c = 0; c < N_COLS; c++) {
-            if (grid[get_grid_index(r,c)] != '.')
-                continue;
+    // Build candidates for (r,c)
+    char cand[] = "123456789";
+    for (int k = 0; k < N_COLS; k++) exclude_value(cand, grid[get_grid_index(r,k)]);
+    for (int y = 0; y < N_ROWS; y++) exclude_value(cand, grid[get_grid_index(y,c)]);
+    exclude_square_value(cand, grid, get_square_index(r,c));
 
-            memcpy(units_cpy, units, 9);
-            for(int k = 0; k < N_COLS; k++)
-                exclude_value(units_cpy, grid[get_grid_index(r,k)]);
-            for (int y = 0; y < N_ROWS; y++)
-                exclude_value(units_cpy, grid[get_grid_index(y,c)]);
-            exclude_square_value(units_cpy, grid, get_square_index(r,c));
-
-            if (memcmp(units_cpy, empty, 9) != 0) {
-                for (int z = 0; z < 9; z++) {
-                    if (units_cpy[z] != ' ') {
-                        char grid_copy[GRID_SIZE];
-                        memcpy(grid_copy, grid, GRID_SIZE);
-                        grid_copy[get_grid_index(r, c)] = units_cpy[z];
-
-                        if (solve_grid(grid_copy) == 1) {
-                            memcpy(grid, grid_copy, GRID_SIZE); // <-- bring back full solution
-                            free(units_cpy);                    // <-- free before returning
-                            return 1;
-                        }
-                    }
-                }
-            }
+    // Try each candidate in place
+    for (int z = 0; z < 9; z++) {
+        if (cand[z] != ' ') {
+            grid[get_grid_index(r,c)] = cand[z];
+            if (solve_grid(grid)) return 1;
         }
     }
 
-    free(units_cpy); // <-- free on failure path too
+    // Backtrack
+    grid[get_grid_index(r,c)] = '.';
     return 0;
 }
+
 
 
 int main(void) {
