@@ -5,7 +5,7 @@
 
 #define N_ROWS 9
 #define N_COLS 9
-#define GRID_SIZE N_ROWS * N_COLS
+#define GRID_SIZE (N_ROWS * N_COLS)
 
 char grid[N_ROWS*N_COLS];
 
@@ -17,7 +17,7 @@ int has_empty_space(char *grid) {
 
 }
 int get_grid_index(int row, int col) {
-   return (row * N_ROWS) + col;
+    return (row * N_COLS) + col;
 }
 int get_square_index(int row, int col) {
    return row/3*3 + (col / 3) + 1;	
@@ -35,7 +35,7 @@ void print_grid(char *grid) {
       for(int j = 0; j < N_COLS; j++) {
 	idx = (i * N_ROWS) + j; 
 	printf("%c ",grid[idx]);
-	if (idx % 3 == 2 && j < N_COLS-1)
+	if (j % 3 == 2 && j < N_COLS - 1)
 	    printf("|");	
       }
       printf("\n");
@@ -125,7 +125,7 @@ int solve_grid(char *grid) {
 
 int main(void) {
    reset_grid(grid);
-   //print_grid(grid);
+   print_grid(grid);
    memcpy(grid,"..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3..",81);
    solve_grid(grid);
    print_grid(grid);
